@@ -14,6 +14,19 @@ All registers are 32 bit wide.
 
 * Stack Pointer: SP
 
+### Register Encoding
+
+Enncoding of the registers as it is used in the [Instructions](#instructions) section below.
+
+| reg | Encoding |
+|-----|----------|
+| A   | 01       |
+| B   | 02       |
+| C   | 03       |
+| D   | 04       |
+| IP  | 05       |
+| SP  | 06       |
+
 ## Flags
 
 * Z - Is set, if the result of the last arithmetic or logic operation was 0.
@@ -32,6 +45,30 @@ Input and output from/to external components is done by reads and writes to spec
 * reg   - Any Register
 * imm   - Immediate (Static Constant Value)
 * label - Jump Label (Target for Jumps)
+* [reg] - Memory Address Pointed to by Register
+* [imm] - Memory Address Pointed to by Immediate
+
+### Instruction Encoding
+
+The type of every instruction is encoded into the right most byte of the first value. The remaining 3 bytes left of the instruction may be used for parameters. The first value is padded with 0s (bytes with value 00) on the left where not all 3 bytes are used.
+
+An instruction may use additional values for more parameters. The additional values do not have to specify the instruction type. The instruction type conclusively determines the amount of additional values used.
+
+All numbers for instruction types or parameters in the encoding table are given in hexadecimal notation in this document. In the instruction tables there is additionally a helper column named "Dec" listing the instruction type in decimal notation.
+
+Example Encoding (see tables for [Register Encoding](#register-encoding) and [MOV Instructions](#mov) for details):
+
+```assembly
+MOV D, 42
+```
+
+```text
+00 00 04 01 00 00 00 2A
+            ^^ ^^ ^^ ^^ Immediate 42
+         ^^ Instruction: MOV (with argument types: reg, imm)
+      ^^ Register D
+^^ ^^ Padding 0s
+```
 
 ### MOV
 
@@ -209,3 +246,4 @@ NOP
 ### TBD
 
 * Interrupts
+* Flag Register
