@@ -4,6 +4,8 @@ All values are 32 bit signed integers.
 
 Smallest addressable: 32 bit = 4 byte
 
+Big-endian byte ordering
+
 ## Registers
 
 All registers are 32 bit wide.
@@ -50,11 +52,13 @@ Input and output from/to external components is done by reads and writes to spec
 
 ### Instruction Encoding
 
-The type of every instruction is encoded into the right most byte of the first value. The remaining 3 bytes left of the instruction may be used for parameters. The first value is padded with 0s (bytes with value 00) on the left where not all 3 bytes are used.
+The type of every instruction is encoded into the right most byte of the first value. The remaining 3 bytes on the left side of the type may be used for parameters. The first value is padded with 0s (bytes with value 00) on the left, if not all 3 bytes are used.
 
 An instruction may use additional values for more parameters. The additional values do not have to specify the instruction type. The instruction type conclusively determines the amount of additional values used.
 
 All numbers for instruction types or parameters in the encoding table are given in hexadecimal notation in this document. In the instruction tables there is additionally a helper column named "Dec" listing the instruction type in decimal notation.
+
+Reminder: Big-endian byte ordering is used in the architecture.
 
 Example Encoding (see tables for [Register Encoding](#register-encoding) and [MOV Instructions](#mov) for details):
 
@@ -69,6 +73,13 @@ MOV D, 42
       ^^ Register D
 ^^ ^^ Padding 0s
 ```
+
+The encoded instruction above has instruction type 01. Looking at the instruction encoding tables we see:
+
+* Instruction tpye 01 is the instruction `MOV reg, imm`.
+* The instruction (of type 01) is always encoded using 2 values.
+* The byte to the left of the type is the target register and decodes to register D.
+* The 2nd value is the source value immediate and decodes to 42.
 
 ### MOV
 
