@@ -1,3 +1,12 @@
+use std::{
+    fs::File,
+    io::{BufRead, BufReader}, collections::HashMap, hash::Hash,
+};
+
+use clap::{App, Arg};
+
+const COMMENT_CHAR: char = ';';
+
 #[derive(Debug)]
 struct IR {
     instructions: Vec<IRLine>,
@@ -5,18 +14,19 @@ struct IR {
 
 #[derive(Debug)]
 enum IRLine {
-    Instruction(IRInstruction),
+    Ins(IRInstruction),
     Label(String),
 }
 
 #[derive(Debug)]
 struct IRInstruction {
-    cmd: IRCommand,
+    command: IRCommand,
     param1: Option<IRParameter>,
     param2: Option<IRParameter>,
+    line_number: usize,
 }
 
-#[derive(Debug)]
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
 enum IRCommand {
     Mov,
     // Arithmetic
@@ -61,6 +71,8 @@ enum IRParameter {
     Reg(IRRegister),
     Imm(i32),
     Label(String),
+    MemReg(IRRegister),
+    MemImm(i32),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -74,6 +86,246 @@ enum IRRegister {
     SP = 0x06,
 }
 
+impl IRInstruction {
+    fn with_cmd_and_params_string(command: IRCommand, params: &str, line_number: usize) -> Option<IRInstruction> {
+        if params == "" {
+            return Some(IRInstruction { command, param1: None, param2: None, line_number });
+        }
+
+        let param_count = params.matches(',').count() + 1;
+        match param_count {
+            1 => Some(IRInstruction { command, param1: Some(IRParameter::from(params, line_number)?), param2: None, line_number }),
+            2 => {
+                // param_count == 2 implies there is one ','
+                let (param1, param2) = params.split_once(',').unwrap();
+                Some(IRInstruction {
+                    command, line_number,
+                    param1: Some(IRParameter::from(param1, line_number)?),
+                    param2: Some(IRParameter::from(param2, line_number)?),
+                })
+            }
+            _ => {
+                eprintln!("Instructions with more than two arguments are not supported. (line {})", line_number);
+                None
+            }
+        }
+    }
+}
+
+impl IRCommand {
+    fn translation_table() -> HashMap<&'static str, IRCommand> {
+        HashMap::from([
+            ("mov", Self::Mov),
+            ("add", Self::Add),
+            ("sub", Self::Sub),
+            ("mul", Self::Mul),
+            ("div", Self::Div),
+            ("mod", Self::Mod),
+            ("pow", Self::Pow),
+            ("inc", Self::Inc),
+            ("dec", Self::Dec),
+            ("and", Self::And),
+            ("or", Self::Or),
+            ("xor", Self::Xor),
+            ("shl", Self::Shl),
+            ("shr", Self::Shr),
+            ("not", Self::Not),
+            ("cmp", Self::Cmp),
+            ("jmp", Self::Jmp),
+            ("jz", Self::Jz),
+            ("jnz", Self::Jnz),
+            ("js", Self::Js),
+            ("jns", Self::Jns),
+            ("je", Self::Jz),
+            ("jne", Self::Jnz),
+            ("jlt", Self::Js),
+            ("jge", Self::Jns),
+            ("jle", Self::Jle),
+            ("jgt", Self::Jgt),
+            ("push", Self::Push),
+            ("pop", Self::Pop),
+            ("call", Self::Call),
+            ("int", Self::Int),
+            ("ret", Self::Ret),
+            ("halt", Self::Halt),
+            ("nop", Self::Nop),
+        ])
+    }
+}
+
+impl IRParameter {
+    fn from(param: &str, line_number: usize) -> Option<IRParameter> {
+        let param = param.trim();
+        if param == "" {
+            eprintln!("Invalid empty parameter on line {}", line_number);
+            return None;
+        }
+
+        if param.starts_with('[') && param.ends_with(']') {
+            // Remove both '[' prefix and ']' suffix.
+            let mut chars = param.chars();
+            chars.next();
+            chars.next_back();
+            let inner = IRParameter::from(chars.as_str(), line_number);
+            return match inner {
+                Some(IRParameter::Reg(register)) => Some(IRParameter::MemReg(register)),
+                Some(IRParameter::Imm(value)) => Some(IRParameter::MemImm(value)),
+                None => None, // Already printed an error message.
+                Some(_) => {
+                    eprintln!("Invalid parameter '{}' on line {}", param, line_number);
+                    None
+                }
+            }
+        }
+
+        if param.starts_with(|c: char| c.is_digit(10) || c == '-' || c == '+') {
+            return Some(IRParameter::Imm(Self::get_immediate_value(param, line_number)?));
+        }
+
+        if let Some(register) = IRRegister::from(param) {
+            return Some(IRParameter::Reg(register));
+        }
+
+        if param.chars().all(|c|c.is_ascii_alphabetic()) {
+            return Some(IRParameter::Label(param.into()));
+        }
+
+        eprintln!("Invalid parameter '{}' on line {}", param, line_number);
+        None
+    }
+
+    fn get_immediate_value(mut param: &str, line_number: usize) -> Option<i32> {
+        let original = param;
+        let negative = param.starts_with('-');
+        let negative_factor = if negative { -1 } else { 1 };
+
+        if negative || param.starts_with('+') {
+            // Remove '-' or '+' prefix.
+            let mut chars = param.chars();
+            chars.next();
+            param = chars.as_str();
+        }
+
+        let conversion = if param.starts_with("0x") {
+            // Remove the '0x'.
+            let mut chars = param.chars();
+            chars.next();
+            chars.next();
+            i32::from_str_radix(chars.as_str(), 16)
+        } else {
+            param.parse::<i32>()
+        };
+
+        match conversion {
+            Ok(number) => Some(negative_factor * number),
+            Err(e) => {
+                eprintln!("Invalid number '{}' on line {}: {}", original, line_number, e);
+                None
+            }
+        }
+    }
+}
+
+impl IRRegister {
+    fn from(param: &str) -> Option<IRRegister> {
+        match param {
+            "A" | "a" => Some(IRRegister::A),
+            "B" | "b" => Some(IRRegister::B),
+            "C" | "c" => Some(IRRegister::C),
+            "D" | "d" => Some(IRRegister::D),
+            "IP" | "ip" => Some(IRRegister::IP),
+            "SP" | "sp" => Some(IRRegister::SP),
+            _ => None,
+        }
+    }
+}
+
+struct TranslationTable {
+    command: HashMap<&'static str, IRCommand>,
+}
+
+impl TranslationTable {
+    fn new() -> TranslationTable {
+        TranslationTable {
+            command: IRCommand::translation_table(),
+        }
+    }
+
+    fn create_intermediate(&self, line: &str, line_number: usize) -> Option<IRLine> {
+        // Remove any comments from the line.
+        let split = line.split_once(COMMENT_CHAR);
+        let line = match split {
+            Some((left, _)) => left,
+            None => line,
+        };
+
+        let split = line.split_once(char::is_whitespace);
+        let (left, right) = match split {
+            Some((left, right)) => (left, right),
+            None => (line, ""),
+        };
+
+        let left = left.trim();
+        let right = right.trim();
+
+        // Handle empty lines.
+        if left.len() == 0 {
+            return None;
+        }
+
+        // Handle jump labels.
+        if left.ends_with(':') {
+            let mut label = left.chars();
+            label.next_back(); // Remove the ':'
+            return Some(IRLine::Label(label.as_str().into()))
+        }
+
+        // Handle instructions.
+        let left =left.to_ascii_lowercase();
+        match self.command.get(&left as &str) {
+            Some(command) => Some(IRLine::Ins(IRInstruction::with_cmd_and_params_string(command.clone(), right, line_number)?)),
+            None => {
+                eprintln!("Invalid command '{}' on line {}", left, line_number); // TODO: Proper error handling.
+                None
+            }
+        }
+    }
+}
+
+fn parse_arguments() -> Option<String> {
+    let matches = App::new("JP Factorio Assembler")
+        .version("0.1.0")
+        .arg(
+            Arg::new("input-file")
+                .help("Assembly file that is going to be assembled")
+                .required(true),
+        )
+        .get_matches();
+
+    match matches.value_of("input-file") {
+        Some(file) => Some(file.into()),
+        _ => None,
+    }
+}
+
 fn main() {
-    println!("Hello, world!");
+    let file_name = if let Some(file) = parse_arguments() {
+        file
+    } else {
+        eprintln!("Invalid argument(s). Try --help for more information.");
+        return;
+    };
+
+    let translation = TranslationTable::new();
+
+    let file = File::open(file_name).expect("Could not open given file");
+    let intermediate = IR {
+        instructions: BufReader::new(file)
+            .lines()
+            .enumerate()
+            .filter_map(|(number, line)| translation.create_intermediate(&line.expect("error"), number))
+            .collect(),
+    };
+
+    println!("{:#?}", intermediate);
 }
