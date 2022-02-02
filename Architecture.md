@@ -208,6 +208,12 @@ Jumps jump a relative distance, where 0 is the current location. A jump with 0 a
 | `JNZ label` | location 52 |  82 | Jump to label if Z flag is not set.
 | `JS  label` | location 53 |  83 | Jump to label if S flag is set.
 | `JNS label` | location 54 |  84 | Jump to label if S flag is not set.
+| `JE  label` | location 51 |  81 | Alias for JZ. (Used with CMP for "jump if equal".)
+| `JNE label` | location 52 |  82 | Alias for JNZ. (Used with CMP for "jump if not equal".)
+| `JLT label` | location 53 |  83 | Alias for JS. (Used with CMP for "jump if less than".)
+| `JGE label` | location 54 |  84 | Alias for JNS. (Used with CMP for "jump if equal or greater than".)
+| `JLE label` | location 55 |  85 | Jump to label if S or Z flag is set. (Used with CMP for "jump if equal or less than".)
+| `JGT label` | location 56 |  86 | Jump to label if both S and Z flags are not set. (Used with CMP for "jump if greater than".)
 
 `location` in the table above is an i24 (24 bit signed integer). If the jump condition is true, `location` is added to IP (instruction pointer register).
 
