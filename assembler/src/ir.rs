@@ -70,6 +70,16 @@ pub enum IRParameter {
     MemImm(i32),
 }
 
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+pub enum IRParamType {
+    None,
+    Register,
+    Immediate,
+    Label,
+    MemoryAtRegister,
+    MemoryAtImmediate,
+}
+
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum IRRegister {
@@ -149,6 +159,16 @@ impl IRCommand {
 }
 
 impl IRParameter {
+    pub fn param_type(&self) -> IRParamType {
+        match self {
+            IRParameter::Reg(_) => IRParamType::Register,
+            IRParameter::Imm(_) => IRParamType::Immediate,
+            IRParameter::Label(_) => IRParamType::Label,
+            IRParameter::MemReg(_) => IRParamType::MemoryAtRegister,
+            IRParameter::MemImm(_) => IRParamType::MemoryAtImmediate,
+        }
+    }
+
     fn from(param: &str, line_number: usize) -> Option<IRParameter> {
         let param = param.trim();
         if param == "" {
@@ -235,13 +255,13 @@ impl IRRegister {
     }
 }
 
-pub struct TranslationTable {
+pub struct IRTranslationTable {
     command: HashMap<&'static str, IRCommand>,
 }
 
-impl TranslationTable {
-    pub fn new() -> TranslationTable {
-        TranslationTable {
+impl IRTranslationTable {
+    pub fn new() -> IRTranslationTable {
+        IRTranslationTable {
             command: IRCommand::translation_table(),
         }
     }
