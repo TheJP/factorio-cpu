@@ -17,4 +17,4 @@ path = "src/main.rs"
 clap = "3.0.10"
 
 [dev-dependencies]
-termcolor = "1.1.2"
+colored = "2"

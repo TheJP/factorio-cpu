@@ -1,11 +1,11 @@
 mod ir;
 mod assembler;
 
-use std::{fs::File, io::{BufReader, BufRead}};
+use std::{fs::File, io::{BufReader, BufRead}, path::Path};
 
 use crate::{ir::{IR, IRTranslationTable}};
 
-pub fn assemble(input_file: &str) -> Vec<u8> {
+pub fn assemble<P: AsRef<Path>>(input_file: P) -> Vec<u8> {
     let translation = IRTranslationTable::new();
 
     let file = File::open(input_file).expect("Could not open input file");
