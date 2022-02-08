@@ -138,7 +138,7 @@ DEC B
 | `MOD reg₁, reg₂` | reg₂ reg₁ 24 |     |  36 | reg₁ %= reg₂
 | `POW reg, imm`   |      reg  15 | imm |  21 | reg = pow(reg, imm)
 | `POW reg₁, reg₂` | reg₂ reg₁ 25 |     |  37 | reg₁ = pow(reg₁, reg₂)
-| `INC reg`        |      reg  17 | imm |  23 | reg++
+| `INC reg`        |      reg  17 |     |  23 | reg++
 | `DEC reg`        |      reg  18 |     |  24 | reg--
 
 Each arithmetic instruction sets the Z and S flags after the computation.
@@ -216,6 +216,8 @@ Jumps jump a relative distance, where 0 is the current location. A jump with 0 a
 | `JGT label` | location 56 |  86 | Jump to label if both S and Z flags are not set. (Used with CMP for "jump if greater than".)
 
 `location` in the table above is an i24 (24 bit signed integer). If the jump condition is true, `location` is added to IP (instruction pointer register).
+
+Note: The smallest addressable space is 32 bits. This is other than most machines, which can address down to the byte space (smallest addressable space equal to 8 bit). When computing correct locations for jump instructions, this has to be considered too: an increase of 1 in location equals the skip of 32 bit in memory.
 
 ### Stack
 
