@@ -1,14 +1,10 @@
-mod ir;
-mod assembler;
-
 use std::{
-    fs::{File, self},
-    io::{BufRead, BufReader},
+    fs::{self},
 };
 
 use clap::{App, Arg};
 
-use crate::{ir::{IR, IRTranslationTable}, assembler::assemble};
+use lib::assemble;
 
 const DEFAULT_OUTPUT: &str = "out.bin";
 
@@ -51,17 +47,6 @@ fn main() {
         return;
     };
 
-    let translation = IRTranslationTable::new();
-
-    let file = File::open(args.input_file).expect("Could not open input file");
-    let intermediate = IR {
-        instructions: BufReader::new(file)
-            .lines()
-            .enumerate()
-            .filter_map(|(number, line)| translation.create_intermediate(&line.expect("Error while reading from file."), number))
-            .collect(),
-    };
-
-    let assembled = assemble(intermediate);
+    let assembled = assemble(&args.input_file);
     fs::write(args.output_file, &assembled).expect("Could not create output file");
 }
