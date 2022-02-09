@@ -6,6 +6,8 @@ struct AssemblyTranslation {
     instructions: HashMap<(IRCommand, IRParamType, IRParamType), u8>,
 }
 
+pub const HALT_INSTRUCTION: u8 = 0xee;
+
 impl AssemblyTranslation {
     fn new() -> AssemblyTranslation {
         let instructions = HashMap::from([
@@ -72,7 +74,7 @@ impl AssemblyTranslation {
             ((IRCommand::Ret, IRParamType::None, IRParamType::None), 0x71),
 
             // Miscellaneous
-            ((IRCommand::Halt, IRParamType::None, IRParamType::None), 0xee),
+            ((IRCommand::Halt, IRParamType::None, IRParamType::None), HALT_INSTRUCTION),
             ((IRCommand::Nop, IRParamType::None, IRParamType::None), 0xff),
         ]);
 
@@ -144,6 +146,12 @@ pub fn assemble(ir: IR) -> Vec<u8> {
                 assembled.push(Vec::new());
             }
         }
+    }
+
+    // Add HALT to the end of the result if it is not present.
+    match &ir.instructions.iter().last() {
+        Some(IRLine::Ins(ins)) if ins.command == IRCommand::Halt => {}
+        _ => assembled.push(vec![0x00, 0x00, 0x00, HALT_INSTRUCTION])
     }
 
     // TODO: Handle labels (use a second scan to do so)
