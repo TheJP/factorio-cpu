@@ -1,0 +1,3 @@
+MOV A, 0x555
+MOV C, 0x333
+XOR A, C ; A = 0x666 = 1638

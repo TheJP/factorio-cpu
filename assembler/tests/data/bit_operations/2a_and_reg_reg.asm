@@ -1,0 +1,3 @@
+MOV A, 0x555
+MOV B, 0x333
+AND A, B ; A = 0x111 = 273

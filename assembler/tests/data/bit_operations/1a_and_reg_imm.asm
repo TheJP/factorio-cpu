@@ -1,0 +1,2 @@
+MOV A, 0x7F05
+AND A, 0x5FF1 ; A = 0x5F01 = 24321

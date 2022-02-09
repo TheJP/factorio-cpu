@@ -1,0 +1,2 @@
+MOV A, 0x5F05
+OR  A, 0x7FF1 ; A = 0x7FF5 = 32757

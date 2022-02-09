@@ -1,0 +1,3 @@
+MOV A, 0xFFFFFFFF
+MOV B, 1
+SHL A, B ; A = 0xFFFFFFFE = -2
