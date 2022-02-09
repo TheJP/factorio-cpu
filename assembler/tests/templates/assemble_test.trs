@@ -1,0 +1,4 @@
+#[test]
+fn assemble_test{number:03}() {{
+    common::assemble_test({asm_path:?}, {bin_path:?});
+}}
