@@ -209,32 +209,21 @@ impl IRParameter {
         None
     }
 
-    fn get_immediate_value(mut param: &str, line_number: usize) -> Option<i32> {
-        let original = param;
-        let negative = param.starts_with('-');
-        let negative_factor = if negative { -1 } else { 1 };
-
-        if negative || param.starts_with('+') {
-            // Remove '-' or '+' prefix.
-            let mut chars = param.chars();
-            chars.next();
-            param = chars.as_str();
-        }
-
+    fn get_immediate_value(param: &str, line_number: usize) -> Option<i32> {
         let conversion = if param.starts_with("0x") {
             // Remove the '0x'.
             let mut chars = param.chars();
             chars.next();
             chars.next();
-            i32::from_str_radix(chars.as_str(), 16)
+            u32::from_str_radix(chars.as_str(), 16).map(|v| v as i32)
         } else {
             param.parse::<i32>()
         };
 
         match conversion {
-            Ok(number) => Some(negative_factor * number),
+            Ok(number) => Some(number),
             Err(e) => {
-                eprintln!("Invalid number '{}' on line {}: {}", original, line_number, e);
+                eprintln!("Invalid number '{}' on line {}: {}", param, line_number, e);
                 None
             }
         }
