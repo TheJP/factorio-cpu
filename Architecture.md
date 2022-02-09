@@ -161,12 +161,12 @@ NOT A
 
 | Instruction      | Encoding          || Dec | Explanation
 |:-----------------|-------------:|:----|----:|:------------
-| `AND reg, imm`   |      reg  1A | imm |  26 | reg  &= imm  (bitwise)
-| `AND reg₁, reg₂` | reg₂ reg₁ 2A |     |  42 | reg₁ &= reg₂ (bitwise)
-| `OR  reg, imm`   |      reg  1B | imm |  27 | reg  |= imm  (bitwise)
-| `OR  reg₁, reg₂` | reg₂ reg₁ 2B |     |  43 | reg₁ |= reg₂ (bitwise)
-| `XOR reg, imm`   |      reg  1C | imm |  28 | reg  ^= imm  (bitwise)
-| `XOR reg₁, reg₂` | reg₂ reg₁ 2C |     |  44 | reg₁ ^= reg₂ (bitwise)
+| `AND reg, imm`   |      reg  1A | imm |  26 | reg  &= imm  (bitwise and)
+| `AND reg₁, reg₂` | reg₂ reg₁ 2A |     |  42 | reg₁ &= reg₂ (bitwise and)
+| `OR  reg, imm`   |      reg  1B | imm |  27 | reg  ¦= imm  (bitwise or)
+| `OR  reg₁, reg₂` | reg₂ reg₁ 2B |     |  43 | reg₁ ¦= reg₂ (bitwise or)
+| `XOR reg, imm`   |      reg  1C | imm |  28 | reg  ^= imm  (bitwise xor)
+| `XOR reg₁, reg₂` | reg₂ reg₁ 2C |     |  44 | reg₁ ^= reg₂ (bitwise xor)
 | `SHL reg, imm`   |      reg  1D | imm |  29 | reg  <<= imm
 | `SHL reg₁, reg₂` | reg₂ reg₁ 2D |     |  45 | reg₁ <<= reg₂
 | `SHR reg, imm`   |      reg  1E | imm |  30 | reg  >>= imm
