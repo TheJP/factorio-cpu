@@ -248,7 +248,7 @@ labelx:
 | Instruction  | Encoding    | Dec | Explanation
 |:-------------|------------:|----:|:------------
 | `CALL label` | location 70 | 112 | Save IP on the stack and jump to label: `PUSH IP; IP += location`
-| `INT  reg`   |      reg 72 | 114 | Save IP on the stack and jump to reg: `PUSH IP; IP += reg`
+| `INT  reg`   |      reg 72 | 114 | Save IP on the stack and jump to reg: `PUSH IP; IP = reg`
 | `RET`        |          71 | 113 | Reutrn from call by popping IP from the stack: `POP IP`
 
 ### Miscellaneous

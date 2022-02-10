@@ -1,0 +1,2 @@
+MOV D, 42
+PUSH D

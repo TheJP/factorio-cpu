@@ -1,0 +1,2 @@
+PUSH 42
+POP C
