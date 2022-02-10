@@ -13,7 +13,7 @@ pub fn assemble<P: AsRef<Path>>(input_file: P) -> Vec<u8> {
         instructions: BufReader::new(file)
             .lines()
             .enumerate()
-            .filter_map(|(number, line)| translation.create_intermediate(&line.expect("Error while reading from file."), number))
+            .filter_map(|(number, line)| translation.create_intermediate(&line.expect("Error while reading from file."), number + 1))
             .collect(),
     };
 

@@ -93,7 +93,7 @@ pub enum IRRegister {
 
 impl IRInstruction {
     fn with_cmd_and_params_string(command: IRCommand, params: &str, line_number: usize) -> Option<IRInstruction> {
-        if params == "" {
+        if params.len() == 0 {
             return Some(IRInstruction { command, param1: None, param2: None, line_number });
         }
 
@@ -201,7 +201,7 @@ impl IRParameter {
             return Some(IRParameter::Reg(register));
         }
 
-        if param.chars().all(|c|c.is_ascii_alphabetic()) {
+        if param.chars().all(char::is_alphanumeric) {
             return Some(IRParameter::Label(param.into()));
         }
 
@@ -281,10 +281,15 @@ impl IRTranslationTable {
         }
 
         // Handle jump labels.
-        if left.ends_with(':') {
+        let starts_alphabetic = left.chars().nth(0).unwrap().is_alphabetic();
+        if left.ends_with(':') && starts_alphabetic {
             let mut label = left.chars();
             label.next_back(); // Remove the ':'
-            return Some(IRLine::Label(label.as_str().into()))
+
+            let label = label.as_str();
+            if label.chars().all(char::is_alphanumeric) {
+                return Some(IRLine::Label(label.into()))
+            }
         }
 
         // Handle instructions.
