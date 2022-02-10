@@ -256,6 +256,9 @@ impl IRTranslationTable {
     }
 
     pub fn create_intermediate(&self, line: &str, line_number: usize) -> Option<IRLine> {
+        // Allow for indents.
+        let line = line.trim_start();
+
         // Remove any comments from the line.
         let split = line.split_once(COMMENT_CHAR);
         let line = match split {
@@ -285,7 +288,7 @@ impl IRTranslationTable {
         }
 
         // Handle instructions.
-        let left =left.to_ascii_lowercase();
+        let left = left.to_ascii_lowercase();
         match self.command.get(&left as &str) {
             Some(command) => Some(IRLine::Ins(IRInstruction::with_cmd_and_params_string(command.clone(), right, line_number)?)),
             None => {
