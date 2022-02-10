@@ -45,7 +45,8 @@ Input and output from/to external components is done by reads and writes to spec
 ### Parameters
 
 * reg   - Any Register
-* imm   - Immediate (Static Constant Value)
+* imm   - Immediate (32 bit) (Static Constant Value)
+* immb  - Immediate Byte (8 bit) (Static Constant Value)
 * label - Jump Label (Target for Jumps)
 * [reg] - Memory Address Pointed to by Register
 * [imm] - Memory Address Pointed to by Immediate
@@ -167,9 +168,9 @@ NOT A
 | `OR  reg₁, reg₂` | reg₂ reg₁ 2B |     |  43 | reg₁ ¦= reg₂ (bitwise or)
 | `XOR reg, imm`   |      reg  1C | imm |  28 | reg  ^= imm  (bitwise xor)
 | `XOR reg₁, reg₂` | reg₂ reg₁ 2C |     |  44 | reg₁ ^= reg₂ (bitwise xor)
-| `SHL reg, imm`   |      reg  1D | imm |  29 | reg  <<= imm
+| `SHL reg, immb`  | immb reg  1D |     |  29 | reg  <<= immb
 | `SHL reg₁, reg₂` | reg₂ reg₁ 2D |     |  45 | reg₁ <<= reg₂
-| `SHR reg, imm`   |      reg  1E | imm |  30 | reg  >>= imm
+| `SHR reg, immb`  | immb reg  1E |     |  30 | reg  >>= immb
 | `SHR reg₁, reg₂` | reg₂ reg₁ 2E |     |  46 | reg₁ >>= reg₂
 | `NOT reg`        |      reg  1F |     |  31 | reg = ~reg (bitwise not)
 

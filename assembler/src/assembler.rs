@@ -1,9 +1,21 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::ir::{IRCommand, IRInstruction, IRLine, IRParamType, IR, IRParameter};
 
+type InstructionSignature = (IRCommand, IRParamType, IRParamType);
+
 struct AssemblyTranslation {
-    instructions: HashMap<(IRCommand, IRParamType, IRParamType), u8>,
+    instructions: HashMap<InstructionSignature, u8>,
+
+    /// Indicates which instructions have byte sized immediates
+    /// as parameters (instead of 32 bit immediates).
+    byte_immediates: HashSet<InstructionSignature>,
+}
+
+struct AssembleInstruction<'a> {
+    instruction: &'a IRInstruction,
+    assembled: Vec<u8>,
+    next_register: usize,
 }
 
 pub const HALT_INSTRUCTION: u8 = 0xee;
@@ -78,46 +90,79 @@ impl AssemblyTranslation {
             ((IRCommand::Nop, IRParamType::None, IRParamType::None), 0xff),
         ]);
 
+        let byte_immediates = HashSet::from([
+            (IRCommand::Shl, IRParamType::Register, IRParamType::Immediate),
+            (IRCommand::Shr, IRParamType::Register, IRParamType::Immediate)
+        ]);
+
         AssemblyTranslation {
-            instructions
+            instructions,
+            byte_immediates,
         }
     }
 
     fn assemble_instruction(&self, instruction: &IRInstruction) -> Vec<u8> {
-        let mut assembled = vec![0u8; 4];
+        let mut assemble = AssembleInstruction::new(instruction);
 
         // Encode instruction type byte.
-        let instruction_type = instruction_type(instruction);
-        let encoding = self.instructions.get(&instruction_type);
-        match encoding {
+        let instruction_signature = instruction_signature(instruction);
+        let encoding = self.instructions.get(&instruction_signature);
+        let encoding = match encoding {
             Some(&instruction_byte) => {
-                assembled[3] = instruction_byte
+                instruction_byte
             }
             None => {
-                eprintln!("Instruction {:?} has no variation with parameters {:?},{:?} (on line {})", instruction_type.0, instruction_type.1, instruction_type.2, instruction.line_number);
+                eprintln!("Instruction {:?} has no variation with parameters {:?},{:?} (on line {})", instruction_signature.0, instruction_signature.1, instruction_signature.2, instruction.line_number);
                 panic!()
             }
+        };
+
+        let byte_immediates = self.byte_immediates.contains(&instruction_signature);
+        assemble.assemble(encoding, byte_immediates);
+
+        assemble.assembled
+    }
+}
+
+impl<'a> AssembleInstruction<'a> {
+    fn new(instruction: &'a IRInstruction) -> AssembleInstruction<'a> {
+        AssembleInstruction {
+            instruction,
+            assembled: vec![0u8; 4],
+            next_register: 2,
         }
-
-        // Encode parameters.
-        let mut next_register = 2;
-        Self::assemble_parameter(&instruction.param1, &mut assembled, &mut next_register);
-        Self::assemble_parameter(&instruction.param2, &mut assembled, &mut next_register);
-
-        assembled
     }
 
-    fn assemble_parameter(param: &Option<IRParameter>, assembled: &mut Vec<u8>, next_register: &mut usize) {
+    fn assemble(&mut self, encoding: u8, byte_immediates: bool) {
+        self.assembled[3] = encoding;
+        self.assemble_parameter(&self.instruction.param1, byte_immediates);
+        self.assemble_parameter(&self.instruction.param2, byte_immediates);
+    }
+
+    fn assemble_parameter(&mut self, param: &Option<IRParameter>, byte_immediates: bool) {
         match param {
             Some(IRParameter::Reg(register)) | Some(IRParameter::MemReg(register)) => {
-                assembled[*next_register] = *register as u8;
-                *next_register -= 1;
+                self.add_register_value(*register as u8);
             }
             Some(IRParameter::Imm(value)) | Some(IRParameter::MemImm(value)) => {
-                assembled.extend_from_slice(&value.to_be_bytes());
+                let value = *value;
+                if !byte_immediates {
+                    self.assembled.extend_from_slice(&value.to_be_bytes());
+                } else {
+                    if value < u8::MIN.into() || value > u8::MAX.into() {
+                        eprintln!("[Warning] Instruction {:?} has has parameter {} that eceeds byte range of [0..256) on line {}", self.instruction.command, value, self.instruction.line_number);
+                    }
+
+                    self.add_register_value(value as u8);
+                }
             }
             _ => {}
         }
+    }
+
+    fn add_register_value(&mut self, value: u8) {
+        self.assembled[self.next_register] = value;
+        self.next_register -= 1;
     }
 }
 
@@ -128,7 +173,7 @@ fn param_type(param: &Option<IRParameter>) -> IRParamType {
     }
 }
 
-fn instruction_type(instruction: &IRInstruction) -> (IRCommand, IRParamType, IRParamType) {
+fn instruction_signature(instruction: &IRInstruction) -> InstructionSignature {
     (instruction.command.clone(), param_type(&instruction.param1), param_type(&instruction.param2))
 }
 
