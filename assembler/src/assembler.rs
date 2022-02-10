@@ -112,8 +112,7 @@ impl AssemblyTranslation {
                 instruction_byte
             }
             None => {
-                eprintln!("Instruction {:?} has no variation with parameters {:?},{:?} (on line {})", instruction_signature.0, instruction_signature.1, instruction_signature.2, instruction.line_number);
-                panic!()
+                panic!("Instruction {:?} has no variation with parameters {:?},{:?} (on line {})", instruction_signature.0, instruction_signature.1, instruction_signature.2, instruction.line_number);
             }
         };
 
@@ -180,15 +179,21 @@ fn instruction_signature(instruction: &IRInstruction) -> InstructionSignature {
 pub fn assemble(ir: IR) -> Vec<u8> {
     let translation = AssemblyTranslation::new();
     let mut assembled = Vec::with_capacity(ir.instructions.len());
+    let mut label_locations = HashMap::new();
 
     // First scan to figure out size and assemble all but labels.
+    let mut location = 0;
     for instruction in &ir.instructions {
         match instruction {
             IRLine::Ins(ins) => {
-                assembled.push(translation.assemble_instruction(ins));
+                let translated = translation.assemble_instruction(ins);
+                location += translated.len() / 4;
+                assembled.push(translated);
             }
-            IRLine::Label(_) => {
-                assembled.push(Vec::new());
+            IRLine::Label(label) => {
+                if label_locations.insert(label, location).is_some() {
+                    panic!("Found duplicate label: '{}'", label);
+                }
             }
         }
     }
@@ -199,7 +204,32 @@ pub fn assemble(ir: IR) -> Vec<u8> {
         _ => assembled.push(vec![0x00, 0x00, 0x00, HALT_INSTRUCTION])
     }
 
-    // TODO: Handle labels (use a second scan to do so)
+    // Second scan to add location to jump instructions.
+    let mut location = 0;
+    let mut assembled_index = 0;
+    for instruction in &ir.instructions {
+        match instruction {
+            IRLine::Ins(ins) => {
+                if let Some(IRParameter::Label(target_label)) = &ins.param1 {
+                    let label_location = match label_locations.get(target_label) {
+                        Some(location) => *location,
+                        None => panic!("Did not find target label '{}'", target_label),
+                    };
+
+                    let location_difference = (label_location as i32) - (location as i32);
+                    let encoded_location = location_difference.to_be_bytes();
+                    for i in 0..3 {
+                        assembled[assembled_index][i] = encoded_location[i+1];
+                    }
+                }
+
+                location += assembled[assembled_index].len() / 4;
+                assembled_index += 1;
+            }
+            _ => {}
+        }
+    }
+
 
     assembled.into_iter().flatten().collect()
 }
