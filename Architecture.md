@@ -198,6 +198,12 @@ JZ  labely
 JNZ labelz
 JS  labely
 JNS labelz
+JE  labely
+JNE labelz
+JLT labely
+JGE labelz
+JLE labely
+JGT labelz
 ```
 
 Jumps jump a relative distance, where 0 is the current location. A jump with 0 as argument is an endless loop.
