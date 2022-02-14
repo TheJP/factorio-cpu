@@ -3,7 +3,7 @@ mod assembler;
 
 use std::{fs::File, io::{BufReader, BufRead}, path::Path};
 
-use crate::{ir::{IR, IRTranslationTable}};
+use crate::ir::{IR, IRTranslationTable};
 
 pub fn assemble<P: AsRef<Path>>(input_file: P) -> Vec<u8> {
     let translation = IRTranslationTable::new();

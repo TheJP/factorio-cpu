@@ -1,1 +1,2 @@
-DIV SP, SP
+MOV SP, 0x777
+DIV SP, SP ; SP = 1

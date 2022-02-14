@@ -1,1 +1,3 @@
-MUL A, SP
+MOV A, 3
+MOV SP, 0x10
+MUL A, SP ; A = 0x30 = 48

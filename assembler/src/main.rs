@@ -1,6 +1,4 @@
-use std::{
-    fs::{self},
-};
+use std::fs;
 
 use clap::{App, Arg};
 
