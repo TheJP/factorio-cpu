@@ -1,10 +1,14 @@
-; Interrupts
-JMP i1
-JMP i2
+JMP start
 
-INT A
-INT A
-HALT ; A = 1, B = 42
+; Interrupts
+JMP i1 ; [02]
+JMP i2 ; [03]
+
+start:
+    MOV A, 2
+    INT A
+    INT A
+    HALT ; A = 3, B = 42
 
 ; Functions
 i1:
